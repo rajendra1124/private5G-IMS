@@ -61,8 +61,8 @@
 |--------|-------|-----------|
 | OTA DL Throughput (peak) | **3.5 Gbps** | iperf3 server at UPF (`ogstun`) |
 | OTA DL Throughput (median) | **~3.2 Gbps** | 80 MHz · 4×2 MIMO · n78 |
-| E2E DL Throughput (avg) | **657 Mbps** | Limited by 1G N6 link |
-| E2E UL Throughput (avg) | **60 Mbps** | Commercial Android UE |
+| E2E DL Throughput (avg) | **695 Mbps** | Limited by 1G N6 link |
+| E2E UL Throughput (avg) | **60 Mbps** | Commercial Android UE(Aquos sense 8) |
 | Round-Trip Latency (avg) | **~20 ms** | ICMP ping UE ↔ server |
 | Voice Call | **INVITE → 200 OK** | SIP via Kamailio 6.1 |
 | RTP Audio | **~90 kbps** | OPUS/G.711, stable |
@@ -76,30 +76,30 @@
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
 │               SERVER: Intel Xeon Gold 6438N (64 vCPU / 515 GB RAM)      │
-│                                                                          │
+│                                                                         │
 │  ┌──────────────────────────────────────────────────────────────────┐   │
-│  │  Open5GS 5G Core                                                  │   │
-│  │  AMF(127.0.0.5) · SMF · UPF(ogstun 10.45/16) · AUSF · UDM · NRF │   │
+│  │  Open5GS 5G Core                                                 │   │
+│  │  AMF(127.0.0.5) · SMF · UPF(ogstun 10.45/16) · AUSF · UDM · NRF  │   │
 │  └─────────────────────────┬────────────────────────────────────────┘   │
 │                             │ N2/NGAP (127.0.0.1 → 127.0.0.5)           │
 │  ┌──────────────────────────▼───────────────────┐                       │
-│  │  srsRAN Project gNB  (CU/DU Split 7.2)        │                       │
-│  │  PLMN 99970 · TAC 7 · PCI 1 · Band n78 80MHz  │                       │
-│  │  ARFCN 637212 · 4T2R · TDD DDDDDDDSUU         │                       │
+│  │  srsRAN Project gNB  (CU/DU Split 7.2)       │                       │
+│  │  PLMN 99970 · TAC 7 · PCI 1 · Band n78 80MHz │                       │
+│  │  ARFCN 637212 · 4T2R · TDD DDDDDDDSUU        │                       │
 │  └──────────────────────────┬───────────────────┘                       │
-│                             │ O-RAN Fronthaul (OFH)                      │
+│                             │ O-RAN Fronthaul (OFH)                     │
 │  ┌──────────────────────────▼───────────────────┐                       │
-│  │  Intel E810 NIC  (enp111s0f0 / VF 0000:6f:01.0) │                    │
-│  │  VF MAC: 00:33:22:33:00:11                    │                       │
-│  │  PTP Grandmaster (G.8275.1) → /dev/ptp0       │                       │
-│  │  VLAN 5 (C-Plane + U-Plane)                   │                       │
+│  │  Intel E810 NIC  (enp111s0f0/VF0000:6f:01.0) │                       │
+│  │  VF MAC: 00:33:22:33:00:11                   │                       │
+│  │  PTP Grandmaster (G.8275.1) → /dev/ptp0      │                       │
+│  │  VLAN 5 (C-Plane + U-Plane)                  │                       │
 │  └──────────────────────────┬───────────────────┘                       │
-│                             │ SFP28 / DAC cable                          │
+│                             │ SFP28 / DAC cable                         │
 └─────────────────────────────┼───────────────────────────────────────────┘
                               │ Fronthaul VLAN 5
 ┌─────────────────────────────▼───────────────────────────────────────────┐
-│  Benetel RAN650  (SW v1.4.0)                                             │
-│  n78 · 3558.18 MHz · 80 MHz BW · 4T2R · 24 dBm/port                    │
+│  Benetel RAN650  (SW v1.4.0)                                            │
+│  n78 · 3558.18 MHz · 80 MHz BW · 4T2R · 24 dBm                          │
 │  MAC: 70:b3:d5:e1:5b:48 · TDD: DDDDDDDSUU                               │
 │  PTP Slave → locks to E810 GM · BFP 9-bit dynamic compression           │
 └─────────────────────────────┬───────────────────────────────────────────┘
@@ -111,8 +111,8 @@
                     └────────────────────┘
 
 IMS Path:
-  UE ──[IMS PDU DNN]──▶ UPF(ogstun2 10.46/16) ──▶ Kamailio 6.1
-                                                   (Registrar/Proxy + RTPEngine)
+  UE ──[IMS PDU DNN]──▶ UPF(ogstun2 10.46.0.1/16) ──▶ Kamailio 6.1
+                                                     (Registrar/Proxy + RTPEngine)
 ```
 
 ### Component Versions
@@ -123,7 +123,7 @@ IMS Path:
 | Open5GS | 2.7.x | 5G SA Core (AMF, SMF, UPF, AUSF, UDM, NRF) |
 | srsRAN Project | 24.x (main branch) | CU/DU gNB — O-RAN Split 7.2 |
 | Benetel RAN650 | SW v1.4.0-NM-5561771 | O-RU: n78, 80 MHz, 4T2R |
-| Intel E810 NIC | ice driver (in-tree) | Fronthaul + PTP Grandmaster |
+| Intel E810 NIC | ice driver  | Fronthaul + PTP Grandmaster |
 | DPDK | 23.11 LTS | Packet I/O for OFH |
 | Kamailio | 6.1 | IMS: SIP Registrar/Proxy |
 | RTPEngine | Latest | RTP media relay (voice & video) |
@@ -133,7 +133,7 @@ IMS Path:
 
 ## 3. Server & Hardware Specifications
 
-### Compute Server (`5ghost1`)
+### Compute Server
 
 ```
 Model   : Intel Xeon Gold 6438N
@@ -148,7 +148,7 @@ VT-x    : Enabled (used for DPDK VFIO)
 
 ```
 top output (idle — srsRAN not running):
-  %Cpu: 0.1us  0.2sy  99.7id
+  %Cpu: 1.4us  0.4sy  97.5id
   MiB Mem : 515285.8 total  /  496932.4 free  /  5911.7 used
   Active: ptp4l (5.9% — PTP GM running), mysqld (IMS DB)
 ```
