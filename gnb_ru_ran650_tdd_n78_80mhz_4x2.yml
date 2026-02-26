@@ -1,0 +1,132 @@
+# ============================================================
+# srsRAN Project — CU/DU gNB Configuration
+# Testbed : Private 5G SA, Mason Innovation Lab, George Mason University
+# RU      : Benetel RAN650 (n78, 80 MHz, 4T2R)
+# Split   : O-RAN 7.2 (Open Fronthaul)
+# Clock   : Intel E810 NIC as PTP Grandmaster
+# ============================================================
+
+# ------------------------------------
+# CU-CP / AMF Connection
+# ------------------------------------
+cu_cp:
+  amf:
+    addr: 127.0.0.5          # Open5GS AMF bind address (loopback for co-hosted core)
+    port: 38412              # SCTP port for NGAP (N2 interface)
+    bind_addr: 127.0.0.1    # Local gNB N2 bind address
+    supported_tracking_areas:
+      - tac: 7
+        plmn_list:
+          - plmn: "99970"   # MCC=999, MNC=70 — test PLMN
+            tai_slice_support_list:
+              - sst: 1      # Slice/Service Type: eMBB
+
+# ------------------------------------
+# DPDK / HAL — CPU affinity for srsRAN
+# Intel Xeon Gold 6438N: 32 cores / 64 threads
+# lcore 0-7 mapped across physical CPUs 0-63
+# ------------------------------------
+hal:
+  eal_args: "--lcores (0-7)@(0-63)"
+
+# ------------------------------------
+# Open Fronthaul (O-RAN 7.2) — RU Interface
+# Timing windows tuned for Benetel RAN650 + E810 GM clock
+# VLAN 5 used for both C-Plane and U-Plane
+# ------------------------------------
+ru_ofh:
+  # Downlink C-Plane timing window (µs)
+  t1a_max_cp_dl: 470
+  t1a_min_cp_dl: 419
+  # Uplink C-Plane timing window (µs)
+  t1a_max_cp_ul: 336
+  t1a_min_cp_ul: 285
+  # Downlink U-Plane timing window (µs)
+  t1a_max_up: 345
+  t1a_min_up: 294
+  # Uplink reception window (µs)
+  ta4_max: 200
+  ta4_min: 0
+  # PRACH C-Plane enabled
+  is_prach_cp_enabled: true
+  # IQ Compression: dynamic BFP 9-bit for DL, UL, and PRACH
+  compr_method_ul: bfp
+  compr_bitwidth_ul: 9
+  compr_method_dl: bfp
+  compr_bitwidth_dl: 9
+  compr_method_prach: bfp
+  compr_bitwidth_prach: 9
+  # Dynamic compression headers (RAN650 uses dynamic mode)
+  enable_ul_static_compr_hdr: false
+  enable_dl_static_compr_hdr: false
+  # IQ scaling factor
+  iq_scaling: 20
+  cells:
+    - network_interface: 0000:6f:01.0    # VF PCI address for fronthaul NIC (enp111s0f0 VF0)
+      ru_mac_addr: 70:b3:d5:e1:5b:48    # Benetel RAN650 fronthaul MAC address
+      du_mac_addr: 00:33:22:33:00:11    # DU VF0 MAC address (must match ru_config.cfg)
+      vlan_tag_cp: 5                    # C-Plane VLAN (must match RAN650 c_plane_du_vlan)
+      vlan_tag_up: 5                    # U-Plane VLAN (must match RAN650 u_plane_du_vlan_*)
+      prach_port_id: [4, 5]             # PRACH antenna ports (eAxC IDs)
+      dl_port_id: [0, 1, 2, 3]         # 4 DL antenna ports (4T)
+      ul_port_id: [0, 1]               # 2 UL antenna ports (2R)
+
+# ------------------------------------
+# Cell Configuration — n78, 80 MHz, 4×2 MIMO
+# TDD pattern: 10ms period, 7DL+S+2UL (DDDDDDDSUU)
+# ------------------------------------
+cell_cfg:
+  dl_arfcn: 637212            # DL ARFCN → 3558.18 MHz center frequency
+  band: 78                    # FR1 n78 (3.3–3.8 GHz)
+  channel_bandwidth_MHz: 80   # 80 MHz channel BW (272 PRBs @ 30 kHz SCS)
+  common_scs: 30              # 30 kHz subcarrier spacing
+  plmn: "99970"               # Must match AMF and SIM
+  tac: 7                      # Tracking Area Code
+  pci: 1                      # Physical Cell Identity
+  nof_antennas_dl: 4          # 4 TX antennas
+  nof_antennas_ul: 2          # 2 RX antennas
+
+  prach:
+    prach_config_index: 159   # Short-format PRACH (A1, slot-based)
+    prach_root_sequence_index: 1
+    zero_correlation_zone: 0
+
+  ssb:
+    ssb_block_power_dbm: 0    # SSB transmit power offset (dBm)
+
+  # TDD UL/DL configuration — 10ms periodicity
+  # Pattern: DDDDDDDSUU → 7 full DL, 1 Special (6D+4G+4U symbols), 2 full UL
+  # Matches RAN650 ru_config.cfg: tdd_pattern_1=DDDD, tdd_pattern_2=DDDSUU
+  tdd_ul_dl_cfg:
+    dl_ul_tx_period: 10       # 10 ms periodicity
+    nof_dl_slots: 7           # 7 downlink slots
+    nof_dl_symbols: 6         # Additional DL symbols in special slot
+    nof_ul_slots: 2           # 2 uplink slots
+    nof_ul_symbols: 4         # UL symbols in special slot
+
+# ------------------------------------
+# Logging
+# ------------------------------------
+log:
+  filename: /tmp/gnb.log
+  ofh_level: info             # O-RAN fronthaul logs
+  phy_level: debug            # PHY layer logs
+  mac_level: debug            # MAC layer logs
+  rrc_level: debug            # RRC logs
+  pdcp_level: debug           # PDCP logs
+
+# ------------------------------------
+# PCAP Captures
+# ------------------------------------
+pcap:
+  mac_filename: /tmp/gnb_mac.pcap
+  mac_type: dlt
+  mac_enable: true
+  ngap_enable: false
+  ngap_filename: /tmp/gnb_ngap.pcap
+
+# ------------------------------------
+# Metrics (Grafana / Prometheus)
+# ------------------------------------
+metrics:
+  enable_json: true            # Enables JSON metrics output for visualization
